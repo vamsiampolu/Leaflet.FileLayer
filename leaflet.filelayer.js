@@ -201,7 +201,7 @@ L.Control.FileLayerLoad = L.Control.extend({
         var fileInput = L.DomUtil.create('input', 'hidden', container);
         fileInput.type = 'file';
         if (!this.options.formats) {
-            fileInput.accept = '.gpx,.kml,.geojson';
+            fileInput.accept = '.gpx,.kml,.geojson,.zip';
         } else {
             fileInput.accept = this.options.formats.join(',');
         }
