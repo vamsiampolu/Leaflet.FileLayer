@@ -20,7 +20,7 @@ var FileLoader = L.Class.extend({
             'geojson': this._loadGeoJSON,
             'gpx': this._convertToGeoJSON,
             'kml': this._convertToGeoJSON,
-            'zip': this._convertToGeoJSON
+            'zip':this._convertShpToGeoJSON
         };
     },
 
@@ -46,35 +46,31 @@ var FileLoader = L.Class.extend({
         // Read selected file using HTML5 File API
         var reader = new FileReader();
         reader.onload = L.Util.bind(function (e) {
-            
-            var parseArrayBufferToShapeFile =  function parseArrayBufferToShapefile(buffer){
-                    var promise = shp(buffer).then(function(data){
-                        return data;
-                });
-                return promise;
-            };
-
             try {
                 this.fire('data:loading', {filename: file.name, format: ext});
                 var layer = parser.call(this, e.target.result, ext);
-                if(e.target.result instanceof ArrayBuffer)
-                {
-                    var promise = parseArrayBufferToShapefile(e.target.result);
-                    promise.then(function(layer){
-                        this.fire('data:loaded',filename:filename,format:ext);
-                    }).catch(function(err){
-                        console.error(err);
-                    });
-                }        
-                else    
+                if(ext !== 'zip')
                     this.fire('data:loaded', {layer: layer, filename: file.name, format: ext});
+                else
+                {
+                    var that = this;
+                    layer
+                        .then(function(layer){
+                            console.log(layer);
+                            that.fire('data:loaded', {layer: layer, filename: file.name, format: ext});
+                        })
+                        .catch(function(err){
+                            console.error(err);
+                            this.fire('data:error',{error:err});
+                        });
+                }        
             }
             catch (err) {
                 this.fire('data:error', {error: err});
             }
 
         }, this);
-        if(ext !== 'zip')
+        if(ext != 'zip')
             reader.readAsText(file);
         else
             reader.readAsArrayBuffer(file);
@@ -104,7 +100,18 @@ var FileLoader = L.Class.extend({
         }
         var geojson = toGeoJSON[format](content);
         return this._loadGeoJSON(geojson);
-    }
+    },
+    _convertShpToGeoJSON:function(content,format){
+        var that = this;
+        if(content instanceof ArrayBuffer && format === 'zip'){
+            return shp(content)
+                .then(this._loadGeoJSON.bind(this))
+                .catch(function(err){
+                    console.error(err);
+                    that.fire('data:error',{error:err});
+                });
+        }
+    }    
 });
 
 
