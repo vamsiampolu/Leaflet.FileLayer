@@ -19,7 +19,8 @@ var FileLoader = L.Class.extend({
         this._parsers = {
             'geojson': this._loadGeoJSON,
             'gpx': this._convertToGeoJSON,
-            'kml': this._convertToGeoJSON
+            'kml': this._convertToGeoJSON,
+            'zip': this._convertToGeoJSON
         };
     },
 
@@ -45,17 +46,38 @@ var FileLoader = L.Class.extend({
         // Read selected file using HTML5 File API
         var reader = new FileReader();
         reader.onload = L.Util.bind(function (e) {
+            
+            var parseArrayBufferToShapeFile =  function parseArrayBufferToShapefile(buffer){
+                    var promise = shp(buffer).then(function(data){
+                        return data;
+                });
+                return promise;
+            };
+
             try {
                 this.fire('data:loading', {filename: file.name, format: ext});
                 var layer = parser.call(this, e.target.result, ext);
-                this.fire('data:loaded', {layer: layer, filename: file.name, format: ext});
+                if(e.target.result instanceof ArrayBuffer)
+                {
+                    var promise = parseArrayBufferToShapefile(e.target.result);
+                    promise.then(function(layer){
+                        this.fire('data:loaded',filename:filename,format:ext);
+                    }).catch(function(err){
+                        console.error(err);
+                    });
+                }        
+                else    
+                    this.fire('data:loaded', {layer: layer, filename: file.name, format: ext});
             }
             catch (err) {
                 this.fire('data:error', {error: err});
             }
 
         }, this);
-        reader.readAsText(file);
+        if(ext !== 'zip')
+            reader.readAsText(file);
+        else
+            reader.readAsArrayBuffer(file);
         return reader;
     },
 
