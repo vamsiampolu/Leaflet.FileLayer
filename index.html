@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="Font-Awesome/css/font-awesome.min.css" />
     <script src = "shapefile-js/dist/shp.js"></script>
     <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
-    <script src="leaflet.filelayer.js"></script>
+    <script src="./leaflet.filelayer.js"></script>
     <script src="togeojson/togeojson.js"></script>
     <style>
         #map {
@@ -64,13 +64,21 @@
 
         var style = {color:'red', opacity: 1.0, fillOpacity: 1.0, weight: 2, clickable: false};
         L.Control.FileLayerLoad.LABEL = '<i class="fa fa-folder-open"></i>';
-        L.Control.fileLayerLoad({
+        var _pluginReady = L.Control.fileLayerLoad({
             fitBounds: true,
             layerOptions: {style: style,
                            pointToLayer: function (data, latlng) {
                               return L.circleMarker(latlng, {style: style});
                            }},
         }).addTo(map);
+        console.log(_pluginReady);
+        _pluginReady.loader.on('data:loaded',function(data){
+            console.log(data);
+        });
+
+        _pluginReady.loader.on('data:error',function(err){
+            console.error(err);
+        });
 
     </script>
 </body>
